@@ -1,6 +1,6 @@
 PesoCarga:2
 PesoDificultad:1
-Semestres:7
+Semestres:8
 1:20.5
 2:25
 3:25
@@ -25,7 +25,7 @@ Materias:52
 13:Escritura universitaria 2;2;3;2;1;3;
 14:CBU;2;1;1;-1;;
 15:Física 2;3;4;3;1;8;16
-16:Física experimental 1;1;1;1;1;15
+16:Física experimental 2;1;1;1;1;;15
 17:Álgebra Líneal;3;4;3;1;1;
 18:Estructuras de Datos;3;4;2;1;11;
 19:Lenguajes y máquinas;3;2;2;1;11;
@@ -51,14 +51,15 @@ Materias:52
 39:CBU;2;1;1;-1;;
 40:Electiva en ciencias;3;3;2;2;10,21;
 41:Móviles;3;6;4;3;31,37;
-42:Electiva profesional;4;3;3;4;
-43:Electiva profesional;4;3;3;4;
-44:CLE;3;2;2;-1;
-45:CBU;2;1;1;-1;
-46:CBU;2;1;1;-1; 
-47:Electiva profesional;4;3;3;4;
-48:CLE;3;2;2;-1;
-49:CBU;2;1;1;-1;
-50:CBU;2;1;1;-1;
+42:Electiva profesional;4;3;3;4;;
+43:Electiva profesional;4;3;3;4;;
+44:CLE;3;2;2;-1;;
+45:CBU;2;1;1;-1;;
+46:CBU;2;1;1;-1;;
+47:Electiva profesional;4;3;3;4;;
+48:CLE;3;2;2;-1;;
+49:CBU;2;1;1;-1;;
+50:CBU;2;1;1;-1;;
 51:Proyecto de grado;3;4;4;3;29;52
 52:Inscripción a grado;0;1;0;3;33;51
+fin
