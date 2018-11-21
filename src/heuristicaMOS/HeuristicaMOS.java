@@ -9,6 +9,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import excepciones.ImpossibilityException;
+import excepciones.RestrictedException;
+
 public class HeuristicaMOS {
 
 	public final static String FILENAME= "./data/materias.txt";
@@ -31,35 +34,60 @@ public class HeuristicaMOS {
 	public HeuristicaMOS(){
 		cargarDatos();
 		setearRestriccionesIniciales();
-		setearRestriccionesPreCo();
+		try {
+			setearRestriccionesPreCo();
+		} catch (ImpossibilityException e) {
+			System.out.println("El sistema no es factible, una materia involucrada con el error es: "+materias[Integer.parseInt(e.getMessage())].nombre);
+		}
+		System.out.println("Holi");
 	}
 
 
-	private void setearRestriccionesPreCo() {
+	private void setearRestriccionesPreCo() throws ImpossibilityException {
 		for (int i = 1; i < materias.length; i++) {
 			Materia act= materias[i];
 			int [] pres=act.prerequisitos;
 			for (int j = 0; j < pres.length; j++) {
-				materias[pres[j]].setMaxSemestre(act.maxSemestre-1);
+				try {
+					materias[pres[j]].setMaxSemestre(act.maxSemestre-1);
+				} catch (RestrictedException e) {
+					Materia materiaException= materias[Integer.parseInt(e.getMessage())];
+					semestres[materiaException.minSemestre].aniadirMateria(materiaException.id);
+				}
 			}
 			int [] cor=act.correquisitos;
 			for (int j = 0; j < cor.length; j++) {
-				materias[cor[j]].setMaxSemestre(act.maxSemestre);
+				try {
+					materias[cor[j]].setMaxSemestre(act.maxSemestre);
+				} catch (RestrictedException e) {
+					Materia materiaException= materias[Integer.parseInt(e.getMessage())];
+					semestres[materiaException.minSemestre].aniadirMateria(materiaException.id);
+				}
 			}
 			LinkedList<Integer> preD=act.soyPreDe;
 			for (Integer j: preD) {
-				materias[j.intValue()].setMinSemestre(act.minSemestre+1);
+				try {
+					materias[j.intValue()].setMinSemestre(act.minSemestre+1);
+				} catch (RestrictedException e) {
+					Materia materiaException= materias[Integer.parseInt(e.getMessage())];
+					semestres[materiaException.minSemestre].aniadirMateria(materiaException.id);
+				}
 			}
 			LinkedList<Integer> corD=act.soyCoDe;
 			for (Integer j: corD) {
-				materias[j.intValue()].setMinSemestre(act.minSemestre);
+				try {
+					materias[j.intValue()].setMinSemestre(act.minSemestre);
+				}
+				catch (RestrictedException e) {
+					Materia materiaException= materias[Integer.parseInt(e.getMessage())];
+					semestres[materiaException.minSemestre].aniadirMateria(materiaException.id);
+				}
 			}
 		}
 	}
 
 
 	private void setearRestriccionesIniciales() {
-		boolean seteo=false;
 		int semActInd=0;
 		Semestre semAct=semestres[semActInd];
 		int credAcum=0;
@@ -120,7 +148,6 @@ public class HeuristicaMOS {
 		for (int materian1: materiasN1) {
 			materias[materian1].setMaxSemInit(maxL1);
 		}
-		System.out.println("Holi");
 	}
 
 
@@ -153,9 +180,6 @@ public class HeuristicaMOS {
 				String[] info= br.readLine().split(":");
 				String[] params= info[1].split(";",7);
 				int id= Integer.parseInt(info[0]);
-
-				System.out.println(info[1]);
-				System.out.println(params.length);
 
 				String[] prer = new String[0];
 				if(!params[5].isEmpty()){

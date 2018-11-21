@@ -2,6 +2,9 @@ package heuristicaMOS;
 
 import java.util.LinkedList;
 
+import excepciones.ImpossibilityException;
+import excepciones.RestrictedException;
+
 public class Materia {
 
 	String nombre;
@@ -62,7 +65,7 @@ public class Materia {
 		maxSemestre=pMaxSemestre;
 	}
 
-	public void setMaxSemestre(int pMaxSem) {
+	public void setMaxSemestre(int pMaxSem) throws RestrictedException, ImpossibilityException {
 		if(pMaxSem<maxSemestre){
 			maxSemestre=pMaxSem;
 			for (Integer i: prerequisitos) {
@@ -71,10 +74,29 @@ public class Materia {
 			for (Integer i: correquisitos) {
 				materias[i].setMaxSemestre(maxSemestre);
 			}
+			if(maxSemestre<minSemestre){
+				throw new ImpossibilityException(id+"");
+			}
+			else if(minSemestre==maxSemestre){
+				throw new RestrictedException(id+"");
+			}	
+			if(nivel==3){
+				for (Integer i: materiasN1) {
+					materias[i].setMaxSemestre(maxSemestre-1);
+				}
+			}
+			else if(nivel==4){
+				for (Integer i: materiasN1) {
+					materias[i].setMaxSemestre(maxSemestre-1);
+				}
+				for (Integer i: materiasN2) {
+					materias[i].setMaxSemestre(maxSemestre-1);
+				}
+			}
 		}
 	}
 
-	public void setMinSemestre(int pMinSem) {
+	public void setMinSemestre(int pMinSem) throws RestrictedException, ImpossibilityException {
 		if(pMinSem>minSemestre){
 			minSemestre=pMinSem;
 			for (Integer i: soyCoDe) {
@@ -82,6 +104,25 @@ public class Materia {
 			}
 			for (Integer i: soyPreDe) {
 				materias[i].setMinSemestre(minSemestre+1);
+			}
+			if(maxSemestre<minSemestre){
+				throw new ImpossibilityException(id+"");
+			}
+			else if(minSemestre==maxSemestre){
+				throw new RestrictedException(id+"");
+			}
+			if(nivel==1){
+				for (Integer i: materiasN3) {
+					materias[i].setMinSemestre(minSemestre+1);
+				}
+				for (Integer i: materiasN4) {
+					materias[i].setMinSemestre(minSemestre+1);
+				}
+			}
+			else if(nivel==2){
+				for (Integer i: materiasN4) {
+					materias[i].setMinSemestre(minSemestre+1);
+				}
 			}
 		}
 	}
