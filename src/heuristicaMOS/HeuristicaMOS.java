@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class HeuristicaMOS {
@@ -12,8 +13,8 @@ public class HeuristicaMOS {
 	public final static String FILENAME= "./data/materias.txt";
 	public static int carga=0;
 	public static int dificultad=0;
+	public static Materia[] materias;
 	
-	public static HashMap<Integer, Materia> materias= new HashMap<Integer,Materia>();
 	
 	public static Semestre[] semestres;
 
@@ -49,7 +50,7 @@ public class HeuristicaMOS {
 			}
 			
 			int numMaterias= Integer.parseInt(br.readLine().split(":")[1]);
-			
+			materias= new Materia[numMaterias+1];		
 
 			for (int i = 0; i < numMaterias; i++) {
 				String[] info= br.readLine().split(":");
@@ -66,7 +67,16 @@ public class HeuristicaMOS {
 				
 				int[] prerList= new int[prer.length];
 				for (int j = 0; j < prerList.length; j++) {
-					prerList[j]=Integer.parseInt(prer[j]);
+					int preInt= Integer.parseInt(prer[j]);
+					prerList[j]=preInt;
+					Materia pre= materias[preInt];
+					if(pre!=null){
+						pre.aniadirSoyPreDe(id);
+					}
+					else{
+						Materia nueva= new Materia(preInt, "", -1, -1, -1, -1, new int[]{id}, new int[0]);
+						materias[preInt]= nueva;
+					}
 				}
 				
 				String[] corr = new String[0];
@@ -76,14 +86,37 @@ public class HeuristicaMOS {
 				
 				int[] corList= new int[corr.length];
 				for (int j = 0; j < corList.length; j++) {
-					corList[j]=Integer.parseInt(corr[j]);
+					int coInt= Integer.parseInt(corr[j]);
+					corList[j]=coInt;
+					Materia co= materias[coInt];
+					if(co!=null){
+						co.aniadirSoyCoDe(id);
+					}
+					else{
+						Materia nueva= new Materia(coInt, "", -1, -1, -1, -1, new int[0],new int[]{id});
+						materias[coInt]= nueva;
+					}
 				}
-				if(i==51){
-					System.out.println("hjoli");
+				
+				if(materias[id]!=null){
+					if(materias[id].prerequisitos.length>0){
+						int[] both = Arrays.copyOf(prerList, prerList.length + materias[id].prerequisitos.length);
+						System.arraycopy(materias[id].prerequisitos, 0, both, prerList.length, materias[id].prerequisitos.length);
+						prerList=both;
+					}
+					if(materias[id].correquisitos.length>0){
+						int[] both = Arrays.copyOf(corList, corList.length + materias[id].correquisitos.length);
+						System.arraycopy(materias[id].correquisitos, 0, both, corList.length, materias[id].correquisitos.length);
+						corList=both;
+					}
+				}
+				
+				if(id==51){
+					System.out.println("ñam");
 				}
 				
 				Materia actual= new Materia(id,params[0], Integer.parseInt(params[1]), Integer.parseInt(params[2]), Integer.parseInt(params[3]), Integer.parseInt(params[4]), prerList, corList);
-				materias.put(id, actual);
+				materias[id]= actual;
 			}
 
 			
