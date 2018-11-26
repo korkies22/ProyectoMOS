@@ -3,9 +3,8 @@ package heuristicaMOS;
 import java.util.LinkedList;
 
 import excepciones.ImpossibilityException;
-import excepciones.RestrictedException;
 
-public class Materia {
+public class Materia{
 
 	String nombre;
 	int creditos;
@@ -19,16 +18,20 @@ public class Materia {
 	int id;
 	int minSemestre;
 	int maxSemestre;
+	int semestreSet;
 	Materia[] materias;
+	
+	Semestre[] semestres;
 
 	LinkedList<Integer> materiasN1;
 	LinkedList<Integer> materiasN2;
 	LinkedList<Integer> materiasN3;
 	LinkedList<Integer> materiasN4;
+	public boolean isSeteada;
 
 
-	public Materia(int pId,String pNombre, int pCreditos, int pCarga, int pDificultad, int pNivel, int[] pPrerequisitos, int[] pCorrequisitos, int pMaxSemestre, Materia[] pMaterias,
-			LinkedList<Integer> materiasN12,LinkedList<Integer> materiasN22,LinkedList<Integer> materiasN32,LinkedList<Integer> materiasN42){
+	public Materia(int pId,String pNombre, int pCreditos, int pCarga, int pDificultad, int pNivel, int[] pPrerequisitos, int[] pCorrequisitos, LinkedList<Integer> pSoyPreDe, LinkedList<Integer> pSoyCoDe, int pMaxSemestre, Materia[] pMaterias,
+			LinkedList<Integer> materiasN12,LinkedList<Integer> materiasN22,LinkedList<Integer> materiasN32,LinkedList<Integer> materiasN42, Semestre[] pSemestres){
 		nombre=pNombre;
 		creditos=pCreditos;
 		carga=pCarga;
@@ -37,8 +40,8 @@ public class Materia {
 		prerequisitos=pPrerequisitos;
 		correquisitos=pCorrequisitos;
 		id=pId;
-		soyPreDe= new LinkedList<Integer>();
-		soyCoDe= new LinkedList<Integer>();
+		soyCoDe= pSoyCoDe;
+		soyPreDe= pSoyPreDe;
 		minSemestre=0;
 		maxSemestre=pMaxSemestre;
 		materias=pMaterias;
@@ -47,6 +50,9 @@ public class Materia {
 		materiasN2=materiasN22;
 		materiasN3=materiasN32;
 		materiasN4=materiasN42;
+		semestreSet=0;
+		semestres=pSemestres;
+		isSeteada=false;
 	}
 
 	public void aniadirSoyPreDe(int pSoyPreDe){
@@ -65,7 +71,7 @@ public class Materia {
 		maxSemestre=pMaxSemestre;
 	}
 
-	public void setMaxSemestre(int pMaxSem) throws RestrictedException, ImpossibilityException {
+	public void setMaxSemestre(int pMaxSem) throws ImpossibilityException {
 		if(pMaxSem<maxSemestre){
 			maxSemestre=pMaxSem;
 			for (Integer i: prerequisitos) {
@@ -78,7 +84,7 @@ public class Materia {
 				throw new ImpossibilityException(id+"");
 			}
 			else if(minSemestre==maxSemestre){
-				throw new RestrictedException(id+"");
+				setSemestre(minSemestre);
 			}	
 			if(nivel==3){
 				for (Integer i: materiasN1) {
@@ -96,7 +102,7 @@ public class Materia {
 		}
 	}
 
-	public void setMinSemestre(int pMinSem) throws RestrictedException, ImpossibilityException {
+	public void setMinSemestre(int pMinSem) throws ImpossibilityException {
 		if(pMinSem>minSemestre){
 			minSemestre=pMinSem;
 			for (Integer i: soyCoDe) {
@@ -109,7 +115,7 @@ public class Materia {
 				throw new ImpossibilityException(id+"");
 			}
 			else if(minSemestre==maxSemestre){
-				throw new RestrictedException(id+"");
+				setSemestre(minSemestre);
 			}
 			if(nivel==1){
 				for (Integer i: materiasN3) {
@@ -125,5 +131,75 @@ public class Materia {
 				}
 			}
 		}
+	}
+
+	public void setSemestre(int semestre) throws ImpossibilityException {
+		isSeteada=true;
+		semestreSet=semestre;
+		semestres[semestre].aniadirMateria(id,creditos);
+		minSemestre=semestreSet;
+		maxSemestre=semestreSet;
+		for (Integer i: soyCoDe) {
+			materias[i].setMinSemestre(minSemestre);
+		}
+		for (Integer i: soyPreDe) {
+			materias[i].setMinSemestre(minSemestre+1);
+		}
+		if(maxSemestre<minSemestre){
+			throw new ImpossibilityException(id+"");
+		}
+		for (Integer i: prerequisitos) {
+			materias[i].setMaxSemestre(maxSemestre-1);
+		}
+		for (Integer i: correquisitos) {
+			materias[i].setMaxSemestre(maxSemestre);
+		}
+		if(maxSemestre<minSemestre){
+			throw new ImpossibilityException(id+"");
+		}
+		if(nivel==1){
+			for (Integer i: materiasN3) {
+				materias[i].setMinSemestre(minSemestre+1);
+			}
+			for (Integer i: materiasN4) {
+				materias[i].setMinSemestre(minSemestre+1);
+			}
+		}
+		else if(nivel==2){
+			for (Integer i: materiasN4) {
+				materias[i].setMinSemestre(minSemestre+1);
+			}
+		}
+		else if(nivel==3){
+			for (Integer i: materiasN1) {
+				materias[i].setMaxSemestre(maxSemestre-1);
+			}
+		}
+		else if(nivel==4){
+			for (Integer i: materiasN1) {
+				materias[i].setMaxSemestre(maxSemestre-1);
+			}
+			for (Integer i: materiasN2) {
+				materias[i].setMaxSemestre(maxSemestre-1);
+			}
+		}
+	}
+	
+	public Materia clone(){
+		Materia nueva= new Materia(id,nombre,creditos,carga,dificultad,nivel,prerequisitos,correquisitos,soyPreDe,soyCoDe,maxSemestre,null,materiasN1,materiasN2,materiasN3,materiasN4,null);
+		nueva.minSemestre=minSemestre;
+		if(isSeteada){
+			nueva.isSeteada=true;
+		}
+		return nueva;
+		
+	}
+
+	public void setSemestres(Semestre[] semestresDeep) {
+		semestres= semestresDeep;
+	}
+
+	public void setMaterias(Materia[] materiasDeep) {
+		materias=materiasDeep;
 	}
 }

@@ -5,23 +5,28 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.PriorityQueue;
 
 import excepciones.ImpossibilityException;
-import excepciones.RestrictedException;
 
 public class HeuristicaMOS {
 
-	public final static String FILENAME= "./data/materias.txt";
-	public static int carga=0;
-	public static int dificultad=0;
-	public static Materia[] materias;
-	public static LinkedList<Integer> materiasN1= new LinkedList<Integer>();
-	public static LinkedList<Integer> materiasN2= new LinkedList<Integer>();
-	public static LinkedList<Integer> materiasN3= new LinkedList<Integer>();
-	public static LinkedList<Integer> materiasN4= new LinkedList<Integer>();
+	public final static String FILENAME= "./data/materias3.txt";
+	public int carga=0;
+	public int dificultad=0;
+	public Materia[] materias;
+	public LinkedList<Integer> materiasN1= new LinkedList<Integer>();
+	public LinkedList<Integer> materiasN2= new LinkedList<Integer>();
+	public LinkedList<Integer> materiasN3= new LinkedList<Integer>();
+	public LinkedList<Integer> materiasN4= new LinkedList<Integer>();
+
+	public Semestre[] resultado;
+	public double pesoResultado= Double.MAX_VALUE;
 
 
 	public static Semestre[] semestres;
@@ -36,10 +41,108 @@ public class HeuristicaMOS {
 		setearRestriccionesIniciales();
 		try {
 			setearRestriccionesPreCo();
+			setearMateriasImportantes();
 		} catch (ImpossibilityException e) {
+			e.printStackTrace();
 			System.out.println("El sistema no es factible, una materia involucrada con el error es: "+materias[Integer.parseInt(e.getMessage())].nombre);
 		}
 		System.out.println("Holi");
+		PriorityQueue<Materia> pq= new PriorityQueue<Materia>(materias.length-1, new MateriaComparator(carga, dificultad));
+		for (int i = 1; i < materias.length; i++) {
+			pq.add(materias[i]);
+		}
+		magiaRecursiva(semestres,materias,pq);
+		calcularMinimo();
+	}
+
+	private void calcularMinimo() {
+		if(resultado==null || resultado.length==0){
+			System.out.println("No se encontró ninguna solución factible para este problema");
+		}
+		else{
+			System.out.println("Resultado encontrado!");
+			System.out.println("El pensum de menor peso es el siguiente:");
+			for (int i = 0; i < resultado.length; i++) {
+				System.out.println("Semestre "+(i+1)+":");
+				for (Integer sMateria : resultado[i].materias) {
+					System.out.println("Materia: "+ materias[sMateria].nombre);
+				}
+			}
+		}
+
+	}
+
+
+	private void magiaRecursiva(Semestre[] rSemestres, Materia[] rMaterias, PriorityQueue<Materia> pq){
+		if(pq.isEmpty()){
+			System.out.println("llega");
+			double peso=0;
+			double pesoCargas=0;
+			double pesoDificultades=0;
+			for (Semestre semestre : rSemestres) {
+				double pesoCarga=0;
+				double pesoDificultad=0;
+				for (Integer sMateria : semestre.materias) {
+					pesoCarga+=materias[sMateria].carga;
+					pesoDificultad+=materias[sMateria].dificultad;
+				}
+				pesoCargas+=pesoCarga*pesoCarga;
+				pesoDificultades+=pesoDificultad*pesoDificultad;
+			}
+			peso=pesoCargas*carga+pesoDificultades*dificultad;
+			if(peso<pesoResultado){
+				pesoResultado=peso;
+				resultado=rSemestres;
+			}
+			return;
+		}
+		Materia actual= pq.poll();
+		for (int i = actual.minSemestre; i <= actual.maxSemestre; i++) {
+			if(rSemestres[i].creditos<rSemestres[i].creditosAct+actual.creditos){
+				continue;
+			}
+			Semestre[] semestresDeep= new Semestre[rSemestres.length];
+			for (int j = 0; j < semestresDeep.length; j++) {
+				Semestre clonado= rSemestres[j].clone();
+				semestresDeep[j]=clonado;
+			}
+			Materia[] materiasDeep= new Materia[rMaterias.length];
+			for (int j = 1; j < materiasDeep.length; j++) {
+				Materia clonada= rMaterias[j].clone();
+				clonada.setSemestres(semestresDeep);
+				clonada.setMaterias(materiasDeep);
+				materiasDeep[j]=clonada;
+			}
+			try {
+				materiasDeep[actual.id].setSemestre(i);
+				System.out.println(pq.size());
+				PriorityQueue<Materia> nPq=pq;
+				if(!pq.isEmpty()){
+					nPq=new PriorityQueue<Materia>(pq.size(),pq.comparator());
+					for (int j = 1; j < materiasDeep.length; j++) {
+						if(!materiasDeep[j].isSeteada){
+							nPq.add(materiasDeep[j]);
+						}
+					}
+				}
+				magiaRecursiva(semestresDeep, materiasDeep,nPq);
+			} catch (ImpossibilityException e) {
+			}
+
+		}
+	}
+
+
+
+	private void setearMateriasImportantes() throws ImpossibilityException {
+		for (int i = 1; i < materias.length; i++) {
+			if(materias[i].nombre.contains("Introducción")){
+				materias[i].setSemestre(0);
+			}
+			if(materias[i].nombre.contains("Proyecto")){
+				materias[i].setSemestre(semestres.length-1);
+			}
+		}
 	}
 
 
@@ -48,40 +151,19 @@ public class HeuristicaMOS {
 			Materia act= materias[i];
 			int [] pres=act.prerequisitos;
 			for (int j = 0; j < pres.length; j++) {
-				try {
-					materias[pres[j]].setMaxSemestre(act.maxSemestre-1);
-				} catch (RestrictedException e) {
-					Materia materiaException= materias[Integer.parseInt(e.getMessage())];
-					semestres[materiaException.minSemestre].aniadirMateria(materiaException.id);
-				}
+				materias[pres[j]].setMaxSemestre(act.maxSemestre-1);
 			}
 			int [] cor=act.correquisitos;
 			for (int j = 0; j < cor.length; j++) {
-				try {
-					materias[cor[j]].setMaxSemestre(act.maxSemestre);
-				} catch (RestrictedException e) {
-					Materia materiaException= materias[Integer.parseInt(e.getMessage())];
-					semestres[materiaException.minSemestre].aniadirMateria(materiaException.id);
-				}
+				materias[cor[j]].setMaxSemestre(act.maxSemestre);
 			}
 			LinkedList<Integer> preD=act.soyPreDe;
 			for (Integer j: preD) {
-				try {
-					materias[j.intValue()].setMinSemestre(act.minSemestre+1);
-				} catch (RestrictedException e) {
-					Materia materiaException= materias[Integer.parseInt(e.getMessage())];
-					semestres[materiaException.minSemestre].aniadirMateria(materiaException.id);
-				}
+				materias[j.intValue()].setMinSemestre(act.minSemestre+1);
 			}
 			LinkedList<Integer> corD=act.soyCoDe;
 			for (Integer j: corD) {
-				try {
-					materias[j.intValue()].setMinSemestre(act.minSemestre);
-				}
-				catch (RestrictedException e) {
-					Materia materiaException= materias[Integer.parseInt(e.getMessage())];
-					semestres[materiaException.minSemestre].aniadirMateria(materiaException.id);
-				}
+				materias[j.intValue()].setMinSemestre(act.minSemestre);
 			}
 		}
 	}
@@ -169,7 +251,7 @@ public class HeuristicaMOS {
 			semestres= new Semestre[Integer.parseInt(br.readLine().split(":")[1])];
 			for (int i = 0; i < semestres.length; i++) {
 				String semestreActual= br.readLine();
-				Semestre act= new Semestre(Integer.parseInt(semestreActual.split(":")[0]), Float.parseFloat(semestreActual.split(":")[1]));
+				Semestre act= new Semestre(Integer.parseInt(semestreActual.split(":")[0]), Float.parseFloat(semestreActual.split(":")[1]),0);
 				semestres[i]=act;
 			}
 
@@ -195,7 +277,9 @@ public class HeuristicaMOS {
 						pre.aniadirSoyPreDe(id);
 					}
 					else{
-						Materia nueva= new Materia(preInt, "", -1, -1, -1, -1, new int[]{id}, arregloVacio,semestres.length-1,materias,listaVacia,listaVacia,listaVacia,listaVacia);
+						LinkedList<Integer> soyPre= new LinkedList<Integer>();
+						soyPre.add(id);
+						Materia nueva= new Materia(preInt, "", -1, -1, -1, -1, arregloVacio, arregloVacio,soyPre, new LinkedList<Integer>(), semestres.length-1,materias,listaVacia,listaVacia,listaVacia,listaVacia,new Semestre[0]);
 						materias[preInt]= nueva;
 					}
 				}
@@ -214,26 +298,74 @@ public class HeuristicaMOS {
 						co.aniadirSoyCoDe(id);
 					}
 					else{
-						Materia nueva= new Materia(coInt, "", -1, -1, -1, -1, arregloVacio,new int[]{id},semestres.length-1,materias,listaVacia,listaVacia,listaVacia,listaVacia);
+						LinkedList<Integer> soyCo= new LinkedList<Integer>();
+						soyCo.add(id);
+						Materia nueva= new Materia(coInt, "", -1, -1, -1, -1, arregloVacio,arregloVacio,new LinkedList<Integer>(),soyCo,semestres.length-1,materias,listaVacia,listaVacia,listaVacia,listaVacia,new Semestre[0]);
 						materias[coInt]= nueva;
 					}
 				}
 
 				if(materias[id]!=null){
 					if(materias[id].prerequisitos.length>0){
-						int[] both = Arrays.copyOf(prerList, prerList.length + materias[id].prerequisitos.length);
-						System.arraycopy(materias[id].prerequisitos, 0, both, prerList.length, materias[id].prerequisitos.length);
+						ArrayList<Integer> repetidos= new ArrayList<Integer>();
+						for (int j = 0; j < prerList.length; j++) {
+							for (int k = 0; k < materias[id].prerequisitos.length; k++) {
+								if(prerList[j]==materias[id].prerequisitos[k]){
+									repetidos.add(prerList[j]);
+								}
+							}
+						}
+						int[] both= new int[materias[id].prerequisitos.length+prerList.length-repetidos.size()];
+						int k=0;
+						for (int j = 0; j < materias[id].prerequisitos.length; j++) {
+							if(!repetidos.contains(materias[id].prerequisitos[j])){
+								both[k]=materias[id].prerequisitos[j];
+								k++;
+							}
+							else{
+								repetidos.remove(new Integer(materias[id].correquisitos[j]));
+							}
+						}
+						for (int j = 0; j < prerList.length; j++) {
+							if(!repetidos.contains(prerList[j])){
+								both[k]=prerList[j];
+								k++;
+							}
+						}
+						//int[] both = Arrays.copyOf(corList, corList.length + materias[id].correquisitos.length);
+						//System.arraycopy(materias[id].correquisitos, 0, both, corList.length, materias[id].correquisitos.length);
 						prerList=both;
 					}
 					if(materias[id].correquisitos.length>0){
-						int[] both = Arrays.copyOf(corList, corList.length + materias[id].correquisitos.length);
-						System.arraycopy(materias[id].correquisitos, 0, both, corList.length, materias[id].correquisitos.length);
+						ArrayList<Integer> repetidos= new ArrayList<Integer>();
+						for (int j = 0; j < corList.length; j++) {
+							for (int k = 0; k < materias[id].correquisitos.length; k++) {
+								if(corList[j]==materias[id].correquisitos[k]){
+									repetidos.add(corList[j]);
+								}
+							}
+						}
+						int[] both= new int[materias[id].correquisitos.length+corList.length-repetidos.size()];
+						int k=0;
+						for (int j = 0; j < materias[id].correquisitos.length; j++) {
+							if(!repetidos.contains(materias[id].correquisitos[j])){
+								both[k]=materias[id].correquisitos[j];
+								k++;
+							}
+							else{
+								repetidos.remove(new Integer(materias[id].correquisitos[j]));
+							}
+						}
+						for (int j = 0; j < corList.length; j++) {
+							if(!repetidos.contains(corList[j])){
+								both[k]=corList[j];
+								k++;
+							}
+						}
+						//int[] both = Arrays.copyOf(corList, corList.length + materias[id].correquisitos.length);
+						//System.arraycopy(materias[id].correquisitos, 0, both, corList.length, materias[id].correquisitos.length);
 						corList=both;
 					}
-				}
-
-				if(id==51){
-					System.out.println("ñam");
 				}
 				int nivel= Integer.parseInt(params[4]);
 				switch(nivel){
@@ -250,7 +382,13 @@ public class HeuristicaMOS {
 					materiasN4.add(id);
 					break;
 				}
-				Materia actual= new Materia(id,params[0], Integer.parseInt(params[1]), Integer.parseInt(params[2]), Integer.parseInt(params[3]), nivel, prerList, corList,semestres.length-1,materias,materiasN1,materiasN2,materiasN3,materiasN4);
+				LinkedList<Integer> soyCo= new LinkedList<Integer>();
+				LinkedList<Integer> soyPre= new LinkedList<Integer>();
+				if(materias[id]!=null){
+					soyCo=materias[id].soyCoDe;
+					soyPre=materias[id].soyPreDe;
+				}
+				Materia actual= new Materia(id,params[0], Integer.parseInt(params[1]), Integer.parseInt(params[2]), Integer.parseInt(params[3]), nivel, prerList, corList,soyPre, soyCo, semestres.length-1,materias,materiasN1,materiasN2,materiasN3,materiasN4, semestres);
 				materias[id]= actual;
 			}
 
