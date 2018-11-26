@@ -1,6 +1,7 @@
 package heuristicaMOS;
 
 import java.util.LinkedList;
+import excepciones.ImpossibilityException;
 
 public class Semestre {
 	
@@ -19,7 +20,10 @@ public class Semestre {
 		creditosAct=pCreditosAct;
 	}
 	
-	public void aniadirMateria(int pMateria,float pCreditos){
+	public void aniadirMateria(int pMateria,float pCreditos) throws ImpossibilityException{
+		if(creditos<creditosAct+pCreditos){
+			throw new ImpossibilityException(pMateria+"");
+		}
 		materias.add(pMateria);
 		creditosAct+=pCreditos;
 	}

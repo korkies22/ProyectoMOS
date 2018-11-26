@@ -16,7 +16,7 @@ import excepciones.ImpossibilityException;
 
 public class HeuristicaMOS {
 
-	public final static String FILENAME= "./data/materias3.txt";
+	public final static String FILENAME= "./data/materias2.txt";
 	public int carga=0;
 	public int dificultad=0;
 	public Materia[] materias;
@@ -37,22 +37,24 @@ public class HeuristicaMOS {
 
 
 	public HeuristicaMOS(){
+		System.out.println("Cargar datos:");
+		long tiempo=System.currentTimeMillis();
 		cargarDatos();
 		setearRestriccionesIniciales();
 		try {
 			setearRestriccionesPreCo();
 			setearMateriasImportantes();
 		} catch (ImpossibilityException e) {
-			e.printStackTrace();
 			System.out.println("El sistema no es factible, una materia involucrada con el error es: "+materias[Integer.parseInt(e.getMessage())].nombre);
 		}
-		System.out.println("Holi");
+		System.out.println("Cargados!. Ahora a calcular el mínimo (puede tomar un tiempo)");
 		PriorityQueue<Materia> pq= new PriorityQueue<Materia>(materias.length-1, new MateriaComparator(carga, dificultad));
 		for (int i = 1; i < materias.length; i++) {
 			pq.add(materias[i]);
 		}
 		magiaRecursiva(semestres,materias,pq);
 		calcularMinimo();
+		System.out.println("Tiempo total: "+ ((float)(System.currentTimeMillis()-tiempo)/1000) + "s");
 	}
 
 	private void calcularMinimo() {
@@ -75,7 +77,6 @@ public class HeuristicaMOS {
 
 	private void magiaRecursiva(Semestre[] rSemestres, Materia[] rMaterias, PriorityQueue<Materia> pq){
 		if(pq.isEmpty()){
-			System.out.println("llega");
 			double peso=0;
 			double pesoCargas=0;
 			double pesoDificultades=0;
@@ -115,10 +116,9 @@ public class HeuristicaMOS {
 			}
 			try {
 				materiasDeep[actual.id].setSemestre(i);
-				System.out.println(pq.size());
 				PriorityQueue<Materia> nPq=pq;
-				if(!pq.isEmpty()){
-					nPq=new PriorityQueue<Materia>(pq.size(),pq.comparator());
+				if(pq.size()>1){
+					nPq=new PriorityQueue<Materia>(pq.size()-1,pq.comparator());
 					for (int j = 1; j < materiasDeep.length; j++) {
 						if(!materiasDeep[j].isSeteada){
 							nPq.add(materiasDeep[j]);

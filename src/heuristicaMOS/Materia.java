@@ -134,6 +134,7 @@ public class Materia{
 	}
 
 	public void setSemestre(int semestre) throws ImpossibilityException {
+		if(isSeteada) return;
 		isSeteada=true;
 		semestreSet=semestre;
 		semestres[semestre].aniadirMateria(id,creditos);
