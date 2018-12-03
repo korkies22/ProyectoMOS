@@ -71,6 +71,7 @@ public class Materia{
 		maxSemestre=pMaxSemestre;
 	}
 
+	//Busca en sus prerequisitos o correquisitos para setear sus semestres máximos también
 	public void setMaxSemestre(int pMaxSem) throws ImpossibilityException {
 		if(pMaxSem<maxSemestre){
 			maxSemestre=pMaxSem;
@@ -80,9 +81,11 @@ public class Materia{
 			for (Integer i: correquisitos) {
 				materias[i].setMaxSemestre(maxSemestre);
 			}
+			//Restricciones infactibles
 			if(maxSemestre<minSemestre){
 				throw new ImpossibilityException(id+"");
 			}
+			//Única posibilidad, entonces de una se setea el semestre
 			else if(minSemestre==maxSemestre){
 				setSemestre(minSemestre);
 			}	
@@ -101,7 +104,7 @@ public class Materia{
 			}
 		}
 	}
-
+	//Busca en la lista de quien es prerequisito o correquisito para setear sus semestres mínimos también
 	public void setMinSemestre(int pMinSem) throws ImpossibilityException {
 		if(pMinSem>minSemestre){
 			minSemestre=pMinSem;
@@ -111,9 +114,11 @@ public class Materia{
 			for (Integer i: soyPreDe) {
 				materias[i].setMinSemestre(minSemestre+1);
 			}
+			//Restricciones infactibles
 			if(maxSemestre<minSemestre){
 				throw new ImpossibilityException(id+"");
 			}
+			//Única posibilidad, entonces de una se setea el semestre
 			else if(minSemestre==maxSemestre){
 				setSemestre(minSemestre);
 			}
@@ -132,7 +137,7 @@ public class Materia{
 			}
 		}
 	}
-
+	//Combina setMinSemestre y setMaxSemestre
 	public void setSemestre(int semestre) throws ImpossibilityException {
 		if(isSeteada) return;
 		isSeteada=true;
@@ -146,6 +151,7 @@ public class Materia{
 		for (Integer i: soyPreDe) {
 			materias[i].setMinSemestre(minSemestre+1);
 		}
+		//Restricciones infactibles
 		if(maxSemestre<minSemestre){
 			throw new ImpossibilityException(id+"");
 		}

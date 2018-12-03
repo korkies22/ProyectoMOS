@@ -16,7 +16,11 @@ import excepciones.ImpossibilityException;
 
 public class HeuristicaMOS {
 
-	public final static String FILENAME= "./data/materias2.txt";
+	//public final static String FILENAME= "./data/materias2.txt"; // Inicial para probar rápido. 22 materias, 7 semestres no extraacreditados
+	//public final static String FILENAME= "./data/materias.txt"; //Creo que nunca acaba. Caso completo 52 materias, 8 semestres extraacreditados
+	public final static String FILENAME= "./data/materias3.txt"; //Demora aprox 4 minutos. 30 materias, 8 semestres no extraacreditados
+	//public final static String FILENAME= "./data/materias4.txt"; //20 materias, 8 semestres no extraacreditados
+	
 	public int carga=0;
 	public int dificultad=0;
 	public Materia[] materias;
@@ -44,6 +48,7 @@ public class HeuristicaMOS {
 		try {
 			setearRestriccionesPreCo();
 			setearMateriasImportantes();
+			//Si al setear las restricciones iniciales sale esta excepción, es que el problema no es factible
 		} catch (ImpossibilityException e) {
 			System.out.println("El sistema no es factible, una materia involucrada con el error es: "+materias[Integer.parseInt(e.getMessage())].nombre);
 		}
@@ -57,7 +62,9 @@ public class HeuristicaMOS {
 		System.out.println("Tiempo total: "+ ((float)(System.currentTimeMillis()-tiempo)/1000) + "s");
 	}
 
+	//Imprime el mínimo encontrado en consola, o un mensaje si no lo encuentra
 	private void calcularMinimo() {
+		//Si no hay resultado, es que el problema no tenía una solución factible
 		if(resultado==null || resultado.length==0){
 			System.out.println("No se encontró ninguna solución factible para este problema");
 		}
@@ -70,12 +77,15 @@ public class HeuristicaMOS {
 					System.out.println("Materia: "+ materias[sMateria].nombre);
 				}
 			}
+			
+			System.out.println("El costo total es: "+pesoResultado);
 		}
 
 	}
 
-
+	//Se arma un grafo con todas las combinaciones materia x semestre posibles. Para esto se debe clonar
 	private void magiaRecursiva(Semestre[] rSemestres, Materia[] rMaterias, PriorityQueue<Materia> pq){
+		//Si ya terminó esta rama se calcula el peso y se compara con el mínimo actual
 		if(pq.isEmpty()){
 			double peso=0;
 			double pesoCargas=0;
@@ -98,10 +108,13 @@ public class HeuristicaMOS {
 			return;
 		}
 		Materia actual= pq.poll();
+		//Se recorre la lista de semestres factibles para la materia
 		for (int i = actual.minSemestre; i <= actual.maxSemestre; i++) {
+			//Si no cabe en el semestre, continue
 			if(rSemestres[i].creditos<rSemestres[i].creditosAct+actual.creditos){
 				continue;
 			}
+			//Clonar lista de semestre y de materias
 			Semestre[] semestresDeep= new Semestre[rSemestres.length];
 			for (int j = 0; j < semestresDeep.length; j++) {
 				Semestre clonado= rSemestres[j].clone();
@@ -115,17 +128,22 @@ public class HeuristicaMOS {
 				materiasDeep[j]=clonada;
 			}
 			try {
+				//Se setea el semestre
 				materiasDeep[actual.id].setSemestre(i);
 				PriorityQueue<Materia> nPq=pq;
+				//Si la PQ está vacía no me deja clonarla
 				if(pq.size()>1){
 					nPq=new PriorityQueue<Materia>(pq.size()-1,pq.comparator());
 					for (int j = 1; j < materiasDeep.length; j++) {
+						//Se debe tener cuidado con materias que se hayan seteado durante el algoritmo aunque no haya sido su turno
 						if(!materiasDeep[j].isSeteada){
 							nPq.add(materiasDeep[j]);
 						}
 					}
 				}
+				//Llamado recursivo
 				magiaRecursiva(semestresDeep, materiasDeep,nPq);
+				//Esta excepción significa que la rama actual no conduce a ninguna solución factible, entonces se continúa
 			} catch (ImpossibilityException e) {
 			}
 
@@ -133,7 +151,7 @@ public class HeuristicaMOS {
 	}
 
 
-
+	//Pone introducción en primer semestre y tesis en último
 	private void setearMateriasImportantes() throws ImpossibilityException {
 		for (int i = 1; i < materias.length; i++) {
 			if(materias[i].nombre.contains("Introducción")){
@@ -145,7 +163,7 @@ public class HeuristicaMOS {
 		}
 	}
 
-
+	//Recorre la lista de materias buscando sus prerequisitos y correquisitos para ponerles el mínimo y máximo semestre inicial
 	private void setearRestriccionesPreCo() throws ImpossibilityException {
 		for (int i = 1; i < materias.length; i++) {
 			Materia act= materias[i];
@@ -168,7 +186,8 @@ public class HeuristicaMOS {
 		}
 	}
 
-
+	//Setea el mínimo semestre para materias nivel 3 y 4 basado en el número de materias nivel 1 y 2. Y viceversa para el máximo semestre
+	//de materias nivel 1 y 2
 	private void setearRestriccionesIniciales() {
 		int semActInd=0;
 		Semestre semAct=semestres[semActInd];
